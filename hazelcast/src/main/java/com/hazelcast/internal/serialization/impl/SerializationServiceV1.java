@@ -47,10 +47,7 @@ import com.hazelcast.internal.serialization.impl.defaultserializers.PriorityQueu
 import com.hazelcast.internal.serialization.impl.defaultserializers.SynchronousQueueStreamSerializer;
 import com.hazelcast.internal.serialization.impl.defaultserializers.TreeMapStreamSerializer;
 import com.hazelcast.internal.serialization.impl.defaultserializers.TreeSetStreamSerializer;
-import com.hazelcast.internal.serialization.impl.portable.PortableContext;
-import com.hazelcast.internal.serialization.impl.portable.PortableContextImpl;
-import com.hazelcast.internal.serialization.impl.portable.PortableHookLoader;
-import com.hazelcast.internal.serialization.impl.portable.PortableSerializer;
+import com.hazelcast.internal.serialization.impl.portable.*;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.ClassNameFilter;
@@ -269,9 +266,10 @@ public class SerializationServiceV1 extends AbstractSerializationService {
                         + factoryId + ", class-id " + classId);
             }
             classDefMap.put(classId, cd);
-            int nClassDefCount = cd.getNestedClassDefCount();
+            ClassDefinitionImpl tempCD = (ClassDefinitionImpl) cd;
+            int nClassDefCount = tempCD.getNestedClassDefCount();
             for (int i = 0; i < nClassDefCount; i++) {
-                ClassDefinition ncd = cd.getNestedClassDefinitions().get(i);
+                ClassDefinition ncd = tempCD.getNestedClassDefinitions().get(i);
                 if (ncd.getFieldCount() != 0) {
                     if (classDefMap.containsKey(ncd.getClassId())) {
                         throw new HazelcastSerializationException("Duplicate registration found for factory-id : "
@@ -287,6 +285,7 @@ public class SerializationServiceV1 extends AbstractSerializationService {
         }
     }
 
+
     private void registerClassDefinition(ClassDefinition cd, Map<Integer, Map<Integer, ClassDefinition>> factoryMap,
                                          boolean checkClassDefErrors) {
         Set<String> fieldNames = cd.getFieldNames();
@@ -299,6 +298,7 @@ public class SerializationServiceV1 extends AbstractSerializationService {
                 if (classDefinitionMap != null) {
                     ClassDefinition nestedCd = classDefinitionMap.get(classId);
                     if (nestedCd != null) {
+                        registerClassDefinition(nestedCd, factoryMap, checkClassDefErrors);
                         portableContext.registerClassDefinition(nestedCd);
                         continue;
                     }
