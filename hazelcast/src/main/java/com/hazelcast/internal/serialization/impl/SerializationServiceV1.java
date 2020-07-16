@@ -47,10 +47,7 @@ import com.hazelcast.internal.serialization.impl.defaultserializers.PriorityQueu
 import com.hazelcast.internal.serialization.impl.defaultserializers.SynchronousQueueStreamSerializer;
 import com.hazelcast.internal.serialization.impl.defaultserializers.TreeMapStreamSerializer;
 import com.hazelcast.internal.serialization.impl.defaultserializers.TreeSetStreamSerializer;
-import com.hazelcast.internal.serialization.impl.portable.PortableContext;
-import com.hazelcast.internal.serialization.impl.portable.PortableContextImpl;
-import com.hazelcast.internal.serialization.impl.portable.PortableHookLoader;
-import com.hazelcast.internal.serialization.impl.portable.PortableSerializer;
+import com.hazelcast.internal.serialization.impl.portable.*;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.ClassNameFilter;
@@ -257,8 +254,8 @@ public class SerializationServiceV1 extends AbstractSerializationService {
         safeRegister(Externalizable.class, javaExternalizableAdapter);
         safeRegister(HazelcastJsonValue.class, new HazelcastJsonValueSerializer());
     }
-
-    public void registerClassDefinitions(Collection<ClassDefinition> classDefinitions, boolean checkClassDefErrors) {
+    /*
+       public void registerClassDefinitions(Collection<ClassDefinition> classDefinitions, boolean checkClassDefErrors) {
         Map<Integer, Map<Integer, ClassDefinition>> factoryMap = createHashMap(classDefinitions.size());
         for (ClassDefinition cd : classDefinitions) {
             int factoryId = cd.getFactoryId();
@@ -274,8 +271,54 @@ public class SerializationServiceV1 extends AbstractSerializationService {
             registerClassDefinition(classDefinition, factoryMap, checkClassDefErrors);
         }
     }
+     */
 
-    private void registerClassDefinition(ClassDefinition cd, Map<Integer, Map<Integer, ClassDefinition>> factoryMap,
+    //cd ne konulduysa don her cd kendi sub fieldlerini da dondurup
+    //already
+
+    public void registerClassDefinitions(Collection<ClassDefinition> classDefinitions, boolean checkClassDefErrors) {
+        for (ClassDefinition cd : classDefinitions) {
+            int factoryId = cd.getFactoryId();
+            int classId = cd.getClassId();
+            for (int i = 0; i < cd.getFieldCount(); i++) {
+                if (cd.getField(i).equals(cd)) {
+                    throw new HazelcastSerializationException("Duplicate registration found for factory-id : "
+                            + factoryId + ", class-id " + classId);
+                }
+            }
+            registerClassDefinition(cd, checkClassDefErrors);
+        }
+    }
+
+    private void registerClassDefinition(ClassDefinition cd,
+                                         boolean checkClassDefErrors) {
+        Set<String> fieldNames = cd.getFieldNames();
+        for (String fieldName : fieldNames) {
+            FieldDefinition fd = cd.getField(fieldName);
+            if (fd.getType() == FieldType.PORTABLE || fd.getType() == FieldType.PORTABLE_ARRAY) {
+                int factoryId = fd.getFactoryId();
+                int classId = fd.getClassId();
+                for (int i = 0; i < cd.getFieldCount(); i++) {
+                    if (cd.getField(i) != null){
+                        ClassDefinition nestedCd = ((FieldDefinitionImpl)fd).getClassDefinition();
+                        if (nestedCd.getFieldCount() != 0) {
+                            registerClassDefinition(nestedCd, checkClassDefErrors);
+                            portableContext.registerClassDefinition(nestedCd);
+                            continue;
+                        }
+                        if (checkClassDefErrors) {
+                            throw new HazelcastSerializationException("Could not find registered ClassDefinition for factory-id : "
+                                    + factoryId + ", class-id " + classId);
+                        }
+                    }
+                }
+            }
+        }
+        portableContext.registerClassDefinition(cd);
+    }
+
+    /*
+        private void registerClassDefinition(ClassDefinition cd, Map<Integer, Map<Integer, ClassDefinition>> factoryMap,
                                          boolean checkClassDefErrors) {
         Set<String> fieldNames = cd.getFieldNames();
         for (String fieldName : fieldNames) {
@@ -285,7 +328,8 @@ public class SerializationServiceV1 extends AbstractSerializationService {
                 int classId = fd.getClassId();
                 Map<Integer, ClassDefinition> classDefinitionMap = factoryMap.get(factoryId);
                 if (classDefinitionMap != null) {
-                    ClassDefinition nestedCd = classDefinitionMap.get(classId);
+
+                    ClassDefinition nestedCd = ((FieldDefinitionImpl)fd).getClassDefinition();
                     if (nestedCd != null) {
                         registerClassDefinition(nestedCd, factoryMap, checkClassDefErrors);
                         portableContext.registerClassDefinition(nestedCd);
@@ -301,6 +345,7 @@ public class SerializationServiceV1 extends AbstractSerializationService {
         }
         portableContext.registerClassDefinition(cd);
     }
+     */
 
     public final PortableSerializer getPortableSerializer() {
         return portableSerializer;

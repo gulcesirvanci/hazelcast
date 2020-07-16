@@ -16,6 +16,7 @@
 
 package com.hazelcast.internal.serialization.impl.portable;
 
+import com.hazelcast.nio.serialization.ClassDefinition;
 import com.hazelcast.nio.serialization.FieldDefinition;
 import com.hazelcast.nio.serialization.FieldType;
 
@@ -27,6 +28,7 @@ public class FieldDefinitionImpl implements FieldDefinition {
     private final int classId;
     private final int factoryId;
     private final int version;
+    private final ClassDefinition classDefinition;
 
     public FieldDefinitionImpl(int index, String fieldName, FieldType type, int version) {
         this(index, fieldName, type, 0, 0, version);
@@ -39,6 +41,17 @@ public class FieldDefinitionImpl implements FieldDefinition {
         this.index = index;
         this.factoryId = factoryId;
         this.version = version;
+        this.classDefinition = null;
+    }
+
+    public FieldDefinitionImpl(int index, String fieldName, FieldType type, int factoryId, int classId, int version, ClassDefinition classDefinition) {
+        this.classId = classId;
+        this.type = type;
+        this.fieldName = fieldName;
+        this.index = index;
+        this.factoryId = factoryId;
+        this.version = version;
+        this.classDefinition = classDefinition;
     }
 
     @Override
@@ -71,6 +84,10 @@ public class FieldDefinitionImpl implements FieldDefinition {
         return version;
     }
 
+    public ClassDefinition getClassDefinition() {
+        return classDefinition;
+    }
+
     @Override
     @SuppressWarnings("checkstyle:npathcomplexity")
     public boolean equals(Object o) {
@@ -95,6 +112,9 @@ public class FieldDefinitionImpl implements FieldDefinition {
             return false;
         }
         if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null) {
+            return false;
+        }
+        if (classDefinition != that.classDefinition) {
             return false;
         }
         return type == that.type;
