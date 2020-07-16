@@ -301,7 +301,7 @@ public class SerializationServiceV1 extends AbstractSerializationService {
                 for (int i = 0; i < cd.getFieldCount(); i++) {
                     if (cd.getField(i) != null){
                         ClassDefinition nestedCd = ((FieldDefinitionImpl)fd).getClassDefinition();
-                        if (nestedCd.getFieldCount() != 0) {
+                        if (nestedCd != null) {
                             registerClassDefinition(nestedCd, checkClassDefErrors);
                             portableContext.registerClassDefinition(nestedCd);
                             continue;
