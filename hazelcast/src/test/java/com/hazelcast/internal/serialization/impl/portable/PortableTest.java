@@ -124,6 +124,7 @@ public class PortableTest {
                 = new ClassDefinitionBuilder(PORTABLE_FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE, portableVersion);
         builder.addUTFField("name");
         builder.addIntField("myint");
+        builder.addPortableField("ff", new ClassDefinitionBuilder(PORTABLE_FACTORY_ID, TestSerializationConstants.INVALID_RAW_DATA_PORTABLE_2 , portableVersion).addIntField("intt").build());
         return builder.build();
     }
 
