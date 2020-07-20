@@ -124,6 +124,7 @@ public class PortableTest {
                 = new ClassDefinitionBuilder(PORTABLE_FACTORY_ID, TestSerializationConstants.NAMED_PORTABLE, portableVersion);
         builder.addUTFField("name");
         builder.addIntField("myint");
+        builder.addPortableField("ff", new ClassDefinitionBuilder(PORTABLE_FACTORY_ID, TestSerializationConstants.INVALID_RAW_DATA_PORTABLE_2 , portableVersion).addIntField("intt").build());
         return builder.build();
     }
 
@@ -218,7 +219,6 @@ public class PortableTest {
                 .addClassDefinition(
                         new ClassDefinitionBuilder(PORTABLE_FACTORY_ID, TestSerializationConstants.RAW_DATA_PORTABLE, portableVersion)
                                 .addLongField("l").addCharArrayField("c").addPortableField("p", namedPortableClassDefinition).build());
-
         SerializationService serializationService
                 = new DefaultSerializationServiceBuilder().setConfig(serializationConfig).build();
         RawDataPortable p = new RawDataPortable(System.currentTimeMillis(), "test chars".toCharArray(),

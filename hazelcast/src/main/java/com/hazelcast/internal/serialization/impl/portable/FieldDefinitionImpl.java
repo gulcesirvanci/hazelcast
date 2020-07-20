@@ -51,7 +51,7 @@ public class FieldDefinitionImpl implements FieldDefinition {
         this.index = index;
         this.factoryId = factoryId;
         this.version = version;
-        this.classDefinition = null ;
+        this.classDefinition = null;
     }
 
     @Override
